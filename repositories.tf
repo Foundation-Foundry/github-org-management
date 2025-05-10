@@ -32,7 +32,7 @@ resource "github_branch_protection" "branch_protection" {
   enforce_admins     = each.value.enforce_admins
   allows_deletions   = each.value.allows_deletions
   allows_force_pushes = each.value.allows_force_pushes
-  required_signatures = each.value.required_signatures
+  required_signed_commits = each.value.required_signatures
 
   required_status_checks {
     strict   = each.value.required_status_checks.strict

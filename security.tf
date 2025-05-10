@@ -45,15 +45,4 @@ resource "github_repository" "security_settings" {
       status = each.value.advanced_security_enabled ? "enabled" : "disabled"
     }
   }
-}
-
-# Repository security advisories
-resource "github_repository_security_advisory" "security_advisories" {
-  for_each = var.security_advisories
-
-  repository = each.value.repository
-  summary    = each.value.summary
-  description = each.value.description
-  severity   = each.value.severity
-  cve_id     = each.value.cve_id
 } 

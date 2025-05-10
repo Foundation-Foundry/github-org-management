@@ -185,28 +185,6 @@ variable "repository_security_settings" {
   }
 }
 
-variable "security_advisories" {
-  description = "Map of security advisories"
-  type = map(object({
-    summary     = string
-    description = string
-    severity    = string
-    cve_id      = optional(string)
-    cwe_ids     = optional(list(string))
-    cvss_vector = optional(string)
-    state       = optional(string, "draft")
-  }))
-  default = {}
-  validation {
-    condition     = alltrue([for advisory in var.security_advisories : contains(["low", "medium", "high", "critical"], advisory.severity)])
-    error_message = "Security advisory severity must be one of: low, medium, high, critical."
-  }
-  validation {
-    condition     = alltrue([for advisory in var.security_advisories : contains(["draft", "published", "closed"], advisory.state)])
-    error_message = "Security advisory state must be one of: draft, published, closed."
-  }
-}
-
 # Webhook variables
 variable "webhooks" {
   description = "List of webhooks to create"
