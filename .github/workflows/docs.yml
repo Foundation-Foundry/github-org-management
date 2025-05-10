@@ -1,0 +1,65 @@
+name: Documentation Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.7"
+
+    - name: Install terraform-docs
+      run: |
+        wget https://github.com/terraform-docs/terraform-docs/releases/download/v0.16.0/terraform-docs-v0.16.0-linux-amd64.tar.gz
+        tar -xzf terraform-docs-v0.16.0-linux-amd64.tar.gz
+        sudo mv terraform-docs /usr/local/bin/
+        rm terraform-docs-v0.16.0-linux-amd64.tar.gz
+
+    - name: Generate Documentation
+      id: docs
+      run: |
+        terraform-docs markdown table --output-file README.md --output-mode replace .
+      continue-on-error: true
+
+    - name: Check Documentation
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Documentation is out of date. Please run 'terraform-docs markdown table --output-file README.md --output-mode replace .' and commit the changes."
+          exit 1
+        fi
+
+    - name: Comment PR
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const output = `#### Documentation Check 📚\`${{ steps.docs.outcome }}\`
+          
+          Documentation is ${{ steps.docs.outcome == 'success' ? 'up to date' : 'out of date' }}.`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.name,
+            body: output
+          }) 

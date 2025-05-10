@@ -1,0 +1,58 @@
+name: Publish Module
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  id-token: write  # Required for OIDC authentication
+
+jobs:
+  publish:
+    name: Publish Module
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.7"
+
+    - name: Configure Git
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "github-actions@github.com"
+
+    - name: Create Release
+      id: create_release
+      uses: hashicorp/terraform-github-actions@v1
+      with:
+        tf_actions_version: v1
+        tf_actions_subcommand: 'release'
+        tf_cloud_organization: ${{ vars.TF_CLOUD_ORGANIZATION }}
+        tf_workspace_name: ${{ vars.TF_WORKSPACE_NAME }}
+        tf_api_token: ${{ secrets.TF_API_TOKEN }}
+
+    - name: Tag Release
+      run: |
+        git tag -a "v${{ steps.create_release.outputs.release_version }}" -m "Release v${{ steps.create_release.outputs.release_version }}"
+        git push origin "v${{ steps.create_release.outputs.release_version }}"
+
+    - name: Publish to Terraform Registry
+      uses: hashicorp/terraform-github-actions@v1
+      with:
+        tf_actions_version: v1
+        tf_actions_subcommand: 'publish'
+        tf_cloud_organization: ${{ vars.TF_CLOUD_ORGANIZATION }}
+        tf_workspace_name: ${{ vars.TF_WORKSPACE_NAME }}
+        tf_api_token: ${{ secrets.TF_API_TOKEN }}
+        tf_module_name: ${{ vars.TF_MODULE_NAME }}
+        tf_module_provider: ${{ vars.TF_MODULE_PROVIDER }}
+        tf_module_version: ${{ steps.create_release.outputs.release_version }} 
