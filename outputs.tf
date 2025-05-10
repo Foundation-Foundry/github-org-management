@@ -1,7 +1,7 @@
 # Organization outputs
 output "organization_name" {
   description = "The name of the organization"
-  value       = var.organization_name
+  value       = github_organization.organization.name
 }
 
 # Repository outputs
@@ -23,18 +23,13 @@ output "external_teams" {
 
 # Security outputs
 output "security_managers" {
-  description = "List of security managers"
+  description = "List of security manager teams"
   value       = github_organization_security_manager.security_managers
 }
 
 output "repository_security_settings" {
   description = "Map of repository security settings"
   value       = github_repository_environment.security_settings
-}
-
-output "security_advisories" {
-  description = "Map of security advisories"
-  value       = github_repository_security_advisory.security_advisories
 }
 
 # Branch protection outputs
