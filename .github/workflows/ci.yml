@@ -53,9 +53,11 @@ jobs:
           for example in examples/*; do
             if [ -d "$example" ]; then
               echo "Testing example: $example"
-              terraform init
+              cd "$example"
+              terraform init -backend=false
               terraform validate
-              terraform plan
+              terraform plan -input=false
+              cd ../..
             fi
           done
         working-directory: .
