@@ -630,6 +630,66 @@ repositories = {
    - Template validation
    - Template audit logging
 
+## Version Management
+
+This module uses semantic versioning and automated version management. When changes are merged to the main branch, the version is automatically incremented based on the commit messages:
+
+- `BREAKING CHANGE` or `!:` in commit messages triggers a major version bump
+- `feat:` in commit messages triggers a minor version bump
+- All other changes trigger a patch version bump
+
+### Commit Message Format
+
+Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages:
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Types:
+- `feat`: A new feature (minor version bump)
+- `fix`: A bug fix (patch version bump)
+- `docs`: Documentation changes
+- `style`: Code style changes
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Adding or modifying tests
+- `chore`: Maintenance tasks
+
+Breaking changes should be indicated with `BREAKING CHANGE:` in the footer or with `!` after the type/scope.
+
+### Release Process
+
+1. Changes are merged to the main branch
+2. The version management workflow:
+   - Determines the appropriate version bump
+   - Creates a new release tag
+   - Updates the version in `versions.tf`
+   - Creates a pull request with the version update
+3. The release is published with:
+   - Release notes generated from commit messages
+   - All relevant Terraform files included
+   - Version tag for reference
+
+### Manual Version Control
+
+If you need to manually control the version:
+
+1. Create a tag with the desired version:
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+
+2. Update the version in `versions.tf`:
+   ```hcl
+   version = "1.2.3"
+   ```
+
 ## Usage
 
 ```hcl
