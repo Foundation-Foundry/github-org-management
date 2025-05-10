@@ -1,7 +1,7 @@
 # Organization outputs
 output "organization_name" {
   description = "The name of the organization"
-  value       = github_organization.organization.name
+  value       = var.organization_name
 }
 
 # Repository outputs
