@@ -382,4 +382,40 @@ variable "repository_templates" {
     overwrite_on_create = bool
   }))
   default = {}
+}
+
+variable "advanced_security_enabled_for_new_repositories" {
+  description = "Whether to enable advanced security features for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "secret_scanning_enabled_for_new_repositories" {
+  description = "Whether to enable secret scanning for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "secret_scanning_push_protection_enabled_for_new_repositories" {
+  description = "Whether to enable secret scanning push protection for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "dependabot_alerts_enabled_for_new_repositories" {
+  description = "Whether to enable Dependabot alerts for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "dependabot_security_updates_enabled_for_new_repositories" {
+  description = "Whether to enable Dependabot security updates for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "dependency_graph_enabled_for_new_repositories" {
+  description = "Whether to enable dependency graph for new repositories"
+  type        = bool
+  default     = false
 } 
