@@ -28,10 +28,11 @@ resource "github_branch_protection" "branch_protection" {
   for_each = var.branch_protection_rules
 
   repository_id       = github_repository.repositories[each.value.repository_key].node_id
-  pattern             = each.value.pattern
-  enforce_admins      = each.value.enforce_admins
-  allows_deletions    = each.value.allows_deletions
+  pattern            = each.value.pattern
+  enforce_admins     = each.value.enforce_admins
+  allows_deletions   = each.value.allows_deletions
   allows_force_pushes = each.value.allows_force_pushes
+  required_signatures = each.value.required_signatures
 
   required_status_checks {
     strict   = each.value.required_status_checks.strict
@@ -43,13 +44,6 @@ resource "github_branch_protection" "branch_protection" {
     restrict_dismissals            = each.value.required_pull_request_reviews.restrict_dismissals
     dismissal_restrictions         = each.value.required_pull_request_reviews.dismissal_restrictions
     required_approving_review_count = each.value.required_pull_request_reviews.required_approving_review_count
-  }
-
-  dynamic "required_signatures" {
-    for_each = each.value.required_signatures ? [1] : []
-    content {
-      enabled = true
-    }
   }
 }
 

@@ -22,7 +22,8 @@ resource "github_repository_environment" "security_settings" {
   }
 
   deployment_branch_policy {
-    protected_branches = each.value.deployment_branch_policy.protected_branches
+    custom_branch_policies = !each.value.deployment_branch_policy.protected_branches
+    protected_branches     = each.value.deployment_branch_policy.protected_branches
   }
 }
 
@@ -39,12 +40,6 @@ resource "github_repository" "security_settings" {
     }
     secret_scanning_push_protection {
       status = each.value.secret_scanning_push_protection_enabled ? "enabled" : "disabled"
-    }
-    dependabot_security_updates {
-      status = each.value.dependabot_security_updates_enabled ? "enabled" : "disabled"
-    }
-    code_scanning {
-      status = each.value.code_scanning_enabled ? "enabled" : "disabled"
     }
     advanced_security {
       status = each.value.advanced_security_enabled ? "enabled" : "disabled"

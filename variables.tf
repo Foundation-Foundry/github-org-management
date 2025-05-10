@@ -167,8 +167,6 @@ variable "repository_security_settings" {
     vulnerability_alerts_enabled           = bool
     secret_scanning_enabled                = bool
     secret_scanning_push_protection_enabled = bool
-    dependabot_security_updates_enabled    = bool
-    code_scanning_enabled                  = bool
     advanced_security_enabled              = bool
     reviewers = list(object({
       teams = list(string)
