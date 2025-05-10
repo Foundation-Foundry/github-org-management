@@ -1,6 +1,6 @@
 # Organization security settings
 resource "github_organization_security_manager" "security_managers" {
-  for_each = toset(var.security_managers)
+  for_each  = toset(var.security_managers)
   team_slug = each.value
 }
 
@@ -31,9 +31,9 @@ resource "github_repository_environment" "security_settings" {
 resource "github_repository" "security_settings" {
   for_each = var.repository_security_settings
 
-  name                   = each.value.repository
-  vulnerability_alerts   = each.value.vulnerability_alerts_enabled
-  
+  name                 = each.value.repository
+  vulnerability_alerts = each.value.vulnerability_alerts_enabled
+
   security_and_analysis {
     secret_scanning {
       status = each.value.secret_scanning_enabled ? "enabled" : "disabled"
