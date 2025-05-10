@@ -19,9 +19,9 @@ resource "github_repository_collaborator" "external_collaborators" {
 resource "github_team" "teams" {
   for_each = var.teams
 
-  name        = each.value.name
-  description = each.value.description
-  privacy     = each.value.privacy
+  name           = each.value.name
+  description    = each.value.description
+  privacy        = each.value.privacy
   parent_team_id = each.value.parent_team_id
 }
 
@@ -47,9 +47,9 @@ resource "github_team_repository" "team_repos" {
 resource "github_team" "external_teams" {
   for_each = var.external_teams
 
-  name        = each.value.name
-  description = each.value.description
-  privacy     = "closed"  # External teams should always be closed
+  name           = each.value.name
+  description    = each.value.description
+  privacy        = "closed" # External teams should always be closed
   parent_team_id = each.value.parent_team_id
 }
 

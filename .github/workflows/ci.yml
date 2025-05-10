@@ -11,65 +11,67 @@ permissions:
   pull-requests: write
 
 jobs:
-  terraform:
-    name: Terraform
+  test:
+    name: Test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: "1.5.7"
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
 
-    - name: Terraform Format
-      id: fmt
-      run: terraform fmt -check
-      continue-on-error: true
+      - name: Terraform Format
+        run: terraform fmt -check
+        working-directory: .
 
-    - name: Terraform Init
-      id: init
-      run: terraform init
+      - name: Terraform Init
+        run: terraform init
+        working-directory: .
 
-    - name: Terraform Validate
-      id: validate
-      run: terraform validate
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: .
 
-    - name: Terraform Plan
-      id: plan
-      if: github.event_name == 'pull_request'
-      run: terraform plan -no-color
-      continue-on-error: true
+      - name: Run Unit Tests
+        run: terraform test
+        working-directory: ./tests/unit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Update Pull Request
-      uses: actions/github-script@v7
-      if: github.event_name == 'pull_request'
-      env:
-        PLAN: "${{ steps.plan.outputs.stdout }}"
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+      - name: Run Integration Tests
+        if: github.event_name == 'pull_request'
+        run: terraform test
+        working-directory: ./tests/integration
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          <details><summary>Show Plan</summary>
+      - name: Test Examples
+        run: |
+          for example in examples/*; do
+            if [ -d "$example" ]; then
+              echo "Testing example: $example"
+              cd "$example"
+              terraform init -backend=false
+              terraform validate
+              terraform plan -input=false
+              cd ../..
+            fi
+          done
+        working-directory: .
 
-          \`\`\`\n
-          ${process.env.PLAN}
-          \`\`\`
-
-          </details>`;
-
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.name,
-            body: output
-          }) 
+      - name: Update Pull Request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const testResults = fs.readFileSync('test-results.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Test Results\n\n\`\`\`\n${testResults}\n\`\`\``
+            }); 

@@ -1,17 +1,46 @@
-# GitHub Organization Management Terraform Module
+# GitHub Organization Management Module
 
-This Terraform module provides a comprehensive solution for managing GitHub organizations, including security settings, member management, repository configuration, and branch protection rules.
+This Terraform module provides a comprehensive solution for managing GitHub organizations, including security settings, repository management, team management, and access control.
 
 ## Features
 
-- Organization-wide security settings management
-- Member and team management (internal and external)
+- Organization settings management
 - Repository creation and configuration
+- Team management with proper access controls
 - Branch protection rules
-- Default reviewers configuration
-- Repository templates
-- Webhook management
+- Security settings and analysis
 - Support for both token and GitHub App authentication
+- Automated version management
+- Comprehensive security features
+
+## Security Features
+
+The module includes several security features to help maintain a secure GitHub organization:
+
+1. **Repository Security**:
+   - Vulnerability alerts
+   - Secret scanning
+   - Secret scanning push protection
+   - Dependabot security updates
+   - Code scanning
+   - Advanced security features
+
+2. **Branch Protection**:
+   - Required signed commits
+   - Required status checks
+   - Required pull request reviews
+   - Enforced admins
+   - Protected branches
+
+3. **Team Management**:
+   - Secret and closed team visibility
+   - Granular repository permissions
+   - Security manager assignments
+
+4. **Environment Protection**:
+   - Deployment branch policies
+   - Required reviewers
+   - Wait timers
 
 ## Authentication
 
@@ -803,28 +832,56 @@ module "github_org" {
 
 ## Requirements
 
-- Terraform >= 1.0
-- GitHub provider >= 5.0
+| Name | Version |
+|------|---------|
+| terraform | >= 1.5.7 |
+| github | >= 6.0.0 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| github | >= 6.0.0 |
 
 ## Inputs
 
+### Authentication
+
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| authentication_method | Authentication method to use: 'token' or 'app' | `string` | `"token"` | no |
-| github_token | GitHub personal access token (required when authentication_method is 'token') | `string` | `null` | no |
-| github_app_id | GitHub App ID (required when authentication_method is 'app') | `string` | `null` | no |
-| github_app_installation_id | GitHub App Installation ID (required when authentication_method is 'app') | `string` | `null` | no |
-| github_app_pem_file | Path to the GitHub App private key PEM file (required when authentication_method is 'app') | `string` | `null` | no |
+| authentication_method | Authentication method to use (token or app) | `string` | `"token"` | no |
+| github_token | GitHub personal access token | `string` | n/a | yes |
+| github_app_id | GitHub App ID | `string` | `null` | no |
+| github_app_installation_id | GitHub App installation ID | `string` | `null` | no |
+| github_app_pem_file | Path to GitHub App private key file | `string` | `null` | no |
+
+### Organization Settings
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
 | organization_name | Name of the GitHub organization | `string` | n/a | yes |
 | billing_email | Billing email for the organization | `string` | n/a | yes |
-| members | Map of organization members and their roles | `map` | `{}` | no |
-| teams | Map of teams to create | `map` | `{}` | no |
-| external_collaborators | Map of external collaborators and their repository access | `map` | `{}` | no |
-| external_teams | Map of external teams to create | `map` | `{}` | no |
-| repositories | Map of repositories to create | `map` | `{}` | no |
-| branch_protection_rules | Map of branch protection rules | `map` | `{}` | no |
-| template_repositories | Map of template repositories to create | `map` | `{}` | no |
-| repository_template_enforcement | Configuration for template enforcement | `map` | `{}` | no |
+| company | Company name | `string` | `null` | no |
+| email | Organization email | `string` | `null` | no |
+| location | Organization location | `string` | `null` | no |
+| name | Organization display name | `string` | `null` | no |
+| description | Organization description | `string` | `null` | no |
+
+### Security Settings
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| security_managers | List of team slugs that will be security managers | `list(string)` | `[]` | no |
+| repository_security_settings | Security settings for repositories | `map(object)` | `{}` | no |
+
+### Repository Settings
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| repositories | Repository configurations | `map(object)` | `{}` | no |
+| branch_protection_rules | Branch protection rules | `map(object)` | `{}` | no |
+| team_repositories | Team repository permissions | `map(object)` | `{}` | no |
+| repository_templates | Repository file templates | `map(object)` | `{}` | no |
 
 ## Outputs
 
@@ -833,31 +890,84 @@ module "github_org" {
 | organization_name | The name of the organization |
 | repositories | Map of created repositories |
 | teams | Map of created teams |
-| external_teams | Map of created external teams |
-| branch_protection_rules | Map of branch protection rules |
-| members | Map of organization members |
-| external_collaborators | Map of external collaborators |
-| template_repositories | Map of created template repositories |
-| repository_template_enforcement | Current template enforcement configuration |
+| security_managers | List of security manager teams |
 
-## Security Considerations
+## Usage
 
-1. The GitHub token should be stored securely and not committed to version control
-2. Use environment variables or a secrets management solution to provide the token
-3. Consider using GitHub App authentication for production environments
-4. External collaborators should be given minimal required permissions
-5. External teams should always be set to "closed" privacy
-6. Regularly review external collaborator access
-7. When using GitHub App authentication:
-   - Store the private key securely
-   - Use environment variables for sensitive values
-   - Regularly rotate the private key
-   - Use the minimum required permissions for the app
+### Basic Usage
 
-## Contributing
+```hcl
+module "github_org" {
+  source = "path/to/module"
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request 
+  organization_name = "example-org"
+  billing_email    = "billing@example.com"
+
+  repositories = {
+    "example-repo" = {
+      name        = "example-repo"
+      description = "Example repository"
+      visibility  = "private"
+    }
+  }
+}
+```
+
+### With Security Settings
+
+```hcl
+module "github_org" {
+  source = "path/to/module"
+
+  organization_name = "example-org"
+  billing_email    = "billing@example.com"
+
+  repository_security_settings = {
+    "example-repo" = {
+      repository                              = "example-repo"
+      environment                             = "production"
+      vulnerability_alerts_enabled           = true
+      secret_scanning_enabled                = true
+      secret_scanning_push_protection_enabled = true
+      dependabot_security_updates_enabled    = true
+      code_scanning_enabled                  = true
+      advanced_security_enabled              = true
+    }
+  }
+}
+```
+
+## Security Best Practices
+
+1. **Authentication**:
+   - Use GitHub App authentication for production environments
+   - Store sensitive credentials in environment variables or a secure secret manager
+   - Rotate credentials regularly
+
+2. **Repository Security**:
+   - Enable all available security features
+   - Use branch protection rules
+   - Require signed commits
+   - Enable secret scanning and push protection
+
+3. **Team Management**:
+   - Use secret teams for sensitive operations
+   - Follow the principle of least privilege
+   - Regularly audit team memberships and permissions
+
+4. **Environment Protection**:
+   - Use deployment branch policies
+   - Require reviews for deployments
+   - Set appropriate wait timers
+
+## Version Management
+
+This module uses semantic versioning and automated version management. When changes are merged to the main branch, the version is automatically incremented based on the commit messages:
+
+- `BREAKING CHANGE` or `!:` in commit messages triggers a major version bump
+- `feat:` in commit messages triggers a minor version bump
+- All other changes trigger a patch version bump
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 

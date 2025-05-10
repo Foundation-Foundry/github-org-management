@@ -1,35 +1,34 @@
 # Authentication variables
 variable "authentication_method" {
-  description = "Authentication method to use: 'token' or 'app'"
+  description = "Authentication method to use (token or app)"
   type        = string
   default     = "token"
   validation {
     condition     = contains(["token", "app"], var.authentication_method)
-    error_message = "Authentication method must be either 'token' or 'app'."
+    error_message = "Authentication method must be either 'token' or 'app'"
   }
 }
 
 variable "github_token" {
-  description = "GitHub personal access token (required when authentication_method is 'token')"
+  description = "GitHub personal access token"
   type        = string
   sensitive   = true
-  default     = null
 }
 
 variable "github_app_id" {
-  description = "GitHub App ID (required when authentication_method is 'app')"
+  description = "GitHub App ID"
   type        = string
   default     = null
 }
 
 variable "github_app_installation_id" {
-  description = "GitHub App Installation ID (required when authentication_method is 'app')"
+  description = "GitHub App installation ID"
   type        = string
   default     = null
 }
 
 variable "github_app_pem_file" {
-  description = "Path to the GitHub App private key PEM file (required when authentication_method is 'app')"
+  description = "Path to GitHub App private key file"
   type        = string
   default     = null
 }
@@ -43,10 +42,6 @@ variable "organization_name" {
 variable "billing_email" {
   description = "Billing email for the organization"
   type        = string
-  validation {
-    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.billing_email))
-    error_message = "The billing_email value must be a valid email address."
-  }
 }
 
 variable "company" {
@@ -58,10 +53,7 @@ variable "company" {
 variable "email" {
   description = "Organization email"
   type        = string
-  validation {
-    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.email))
-    error_message = "The email value must be a valid email address."
-  }
+  default     = null
 }
 
 variable "location" {
@@ -167,38 +159,29 @@ variable "security_managers" {
 }
 
 variable "repository_security_settings" {
-  description = "Map of repository security settings"
+  description = "Security settings for repositories"
   type = map(object({
-    vulnerability_alerts_enabled = optional(bool, true)
-    security_policy_enabled     = optional(bool, true)
-    secret_scanning_enabled     = optional(bool, true)
-    secret_scanning_push_protection_enabled = optional(bool, true)
-    dependabot_alerts_enabled   = optional(bool, true)
-    dependabot_security_updates_enabled = optional(bool, true)
-    code_scanning_enabled       = optional(bool, true)
+    repository                              = string
+    environment                             = string
+    wait_timer                              = number
+    vulnerability_alerts_enabled            = bool
+    secret_scanning_enabled                 = bool
+    secret_scanning_push_protection_enabled = bool
+    advanced_security_enabled               = bool
+    reviewers = list(object({
+      teams = list(string)
+      users = list(string)
+    }))
+    deployment_branch_policy = object({
+      protected_branches = bool
+    })
   }))
   default = {}
-}
 
-variable "security_advisories" {
-  description = "Map of security advisories"
-  type = map(object({
-    summary     = string
-    description = string
-    severity    = string
-    cve_id      = optional(string)
-    cwe_ids     = optional(list(string))
-    cvss_vector = optional(string)
-    state       = optional(string, "draft")
-  }))
-  default = {}
   validation {
-    condition     = alltrue([for advisory in var.security_advisories : contains(["low", "medium", "high", "critical"], advisory.severity)])
-    error_message = "Security advisory severity must be one of: low, medium, high, critical."
-  }
-  validation {
-    condition     = alltrue([for advisory in var.security_advisories : contains(["draft", "published", "closed"], advisory.state)])
-    error_message = "Security advisory state must be one of: draft, published, closed."
+    condition = alltrue([for setting in var.repository_security_settings :
+    contains(["enabled", "disabled"], setting.secret_scanning_enabled ? "enabled" : "disabled")])
+    error_message = "Security settings must be either 'enabled' or 'disabled'"
   }
 }
 
@@ -238,34 +221,45 @@ variable "members" {
 }
 
 variable "teams" {
-  description = "Map of teams to create"
+  description = "Team configurations"
   type = map(object({
-    name           = string
-    description    = string
-    privacy        = string
-    parent_team_id = optional(number)
+    name        = string
+    description = string
+    privacy     = string
   }))
   default = {}
+
+  validation {
+    condition = alltrue([for team in var.teams :
+    contains(["secret", "closed"], team.privacy)])
+    error_message = "Team privacy must be either 'secret' or 'closed'"
+  }
 }
 
 variable "team_memberships" {
   description = "Map of team memberships"
   type = map(object({
-    team_key  = string
-    username  = string
-    role      = string
+    team_key = string
+    username = string
+    role     = string
   }))
   default = {}
 }
 
 variable "team_repositories" {
-  description = "Map of team repository access"
+  description = "Team repository permissions"
   type = map(object({
-    team_key    = string
-    repository  = string
-    permission  = string
+    team_key   = string
+    repository = string
+    permission = string
   }))
   default = {}
+
+  validation {
+    condition = alltrue([for perm in var.team_repositories :
+    contains(["pull", "push", "admin", "maintain", "triage"], perm.permission)])
+    error_message = "Permission must be one of: pull, push, admin, maintain, triage"
+  }
 }
 
 # External collaborator variables
@@ -292,9 +286,9 @@ variable "external_teams" {
 variable "external_team_memberships" {
   description = "Map of external team memberships"
   type = map(object({
-    team_key  = string
-    username  = string
-    role      = string
+    team_key = string
+    username = string
+    role     = string
   }))
   default = {}
 }
@@ -302,59 +296,65 @@ variable "external_team_memberships" {
 variable "external_team_repositories" {
   description = "Map of external team repository access"
   type = map(object({
-    team_key    = string
-    repository  = string
-    permission  = string
+    team_key   = string
+    repository = string
+    permission = string
   }))
   default = {}
 }
 
 # Repository variables
 variable "repositories" {
-  description = "Map of repositories to create"
+  description = "Repository configurations"
   type = map(object({
     name                   = string
-    description            = optional(string)
-    homepage_url          = optional(string)
-    visibility            = string
-    has_issues            = optional(bool)
-    has_wiki              = optional(bool)
-    has_downloads         = optional(bool)
-    is_template           = optional(bool)
-    allow_merge_commit    = optional(bool)
-    allow_squash_merge    = optional(bool)
-    allow_rebase_merge    = optional(bool)
-    delete_branch_on_merge = optional(bool)
-    auto_init             = optional(bool)
-    gitignore_template    = optional(string)
-    license_template      = optional(string)
-    archived              = optional(bool)
-    archive_on_destroy    = optional(bool)
-    topics                = optional(list(string))
-    vulnerability_alerts  = optional(bool)
+    description            = string
+    homepage_url           = optional(string)
+    visibility             = optional(string, "private")
+    has_issues             = optional(bool, true)
+    has_wiki               = optional(bool, false)
+    has_downloads          = optional(bool, false)
+    is_template            = optional(bool, false)
+    allow_merge_commit     = optional(bool, true)
+    allow_squash_merge     = optional(bool, true)
+    allow_rebase_merge     = optional(bool, true)
+    delete_branch_on_merge = optional(bool, true)
+    auto_init              = optional(bool, true)
+    gitignore_template     = optional(string)
+    license_template       = optional(string)
+    archived               = optional(bool, false)
+    archive_on_destroy     = optional(bool, false)
+    topics                 = optional(list(string), [])
+    vulnerability_alerts   = optional(bool, true)
   }))
   default = {}
+
+  validation {
+    condition = alltrue([for repo in var.repositories :
+    contains(["private", "public", "internal"], repo.visibility)])
+    error_message = "Repository visibility must be one of: private, public, internal"
+  }
 }
 
 variable "branch_protection_rules" {
-  description = "Map of branch protection rules"
+  description = "Branch protection rules"
   type = map(object({
-    repository_key = string
-    pattern        = string
-    enforce_admins = bool
-    allows_deletions = bool
+    repository_key      = string
+    pattern             = string
+    enforce_admins      = bool
+    allows_deletions    = bool
     allows_force_pushes = bool
+    required_signatures = bool
     required_status_checks = object({
       strict   = bool
       contexts = list(string)
     })
     required_pull_request_reviews = object({
       dismiss_stale_reviews           = bool
-      restrict_dismissals            = bool
-      dismissal_restrictions         = list(string)
+      restrict_dismissals             = bool
+      dismissal_restrictions          = list(string)
       required_approving_review_count = number
     })
-    required_signatures = bool
   }))
   default = {}
 }
@@ -363,23 +363,59 @@ variable "repository_collaborators" {
   description = "Map of repository collaborators"
   type = map(object({
     repository_key = string
-    username      = string
-    permission    = string
+    username       = string
+    permission     = string
   }))
   default = {}
 }
 
 variable "repository_templates" {
-  description = "Map of repository file templates"
+  description = "Repository file templates"
   type = map(object({
     repository_key      = string
-    branch             = string
-    file               = string
-    content            = string
-    commit_message     = string
-    commit_author      = string
-    commit_email       = string
+    branch              = string
+    file                = string
+    content             = string
+    commit_message      = string
+    commit_author       = string
+    commit_email        = string
     overwrite_on_create = bool
   }))
   default = {}
+}
+
+variable "advanced_security_enabled_for_new_repositories" {
+  description = "Whether to enable advanced security features for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "secret_scanning_enabled_for_new_repositories" {
+  description = "Whether to enable secret scanning for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "secret_scanning_push_protection_enabled_for_new_repositories" {
+  description = "Whether to enable secret scanning push protection for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "dependabot_alerts_enabled_for_new_repositories" {
+  description = "Whether to enable Dependabot alerts for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "dependabot_security_updates_enabled_for_new_repositories" {
+  description = "Whether to enable Dependabot security updates for new repositories"
+  type        = bool
+  default     = false
+}
+
+variable "dependency_graph_enabled_for_new_repositories" {
+  description = "Whether to enable dependency graph for new repositories"
+  type        = bool
+  default     = false
 } 

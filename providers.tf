@@ -11,7 +11,7 @@ terraform {
 provider "github" {
   # Use either token or app authentication
   token = var.authentication_method == "token" ? var.github_token : null
-  
+
   # App authentication
   app_auth {
     id              = var.authentication_method == "app" ? var.github_app_id : null
