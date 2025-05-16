@@ -68,6 +68,13 @@ variable "name" {
   default     = null
 }
 
+
+variable "blog" {
+  description = "Organization blog URL"
+  type        = string
+  default     = null
+}
+
 variable "description" {
   description = "Organization description"
   type        = string
@@ -187,8 +194,8 @@ variable "repository_security_settings" {
 
 # Webhook variables
 variable "webhooks" {
-  description = "List of webhooks to create"
-  type = list(object({
+  description = "Map of webhooks to create"
+  type = map(object({
     url          = string
     content_type = string
     secret       = optional(string)
@@ -196,13 +203,13 @@ variable "webhooks" {
     events       = list(string)
     active       = optional(bool, true)
   }))
-  default = []
+  default = {}
   validation {
     condition     = alltrue([for hook in var.webhooks : contains(["json", "form"], hook.content_type)])
     error_message = "Webhook content_type must be either 'json' or 'form'."
   }
   validation {
-    condition     = alltrue([for hook in var.webhooks : alltrue([for event in hook.events : contains(["push", "pull_request", "issues", "issue_comment", "create", "delete", "member", "fork", "watch", "gollum", "public", "member", "team_add", "status", "deployment", "deployment_status", "release", "repository", "repository_vulnerability_alert", "star", "package", "meta", "milestone", "project", "project_card", "project_column", "organization", "org_block", "label", "marketplace_purchase", "marketplace_cancellation", "security_advisory", "check_run", "check_suite", "code_scanning_alert", "commit_comment", "content_reference", "delete", "deploy_key", "deployment", "deployment_status", "fork", "github_app_authorization", "gollum", "installation", "installation_repositories", "issue_comment", "issues", "label", "marketplace_cancellation", "marketplace_purchase", "member", "membership", "meta", "milestone", "organization", "org_block", "package", "page_build", "project", "project_card", "project_column", "public", "pull_request", "pull_request_review", "pull_request_review_comment", "push", "release", "repository", "repository_dispatch", "repository_import", "repository_vulnerability_alert", "security_advisory", "sponsorship", "star", "status", "team", "team_add", "watch"], event)])])
+    condition     = alltrue([for hook in var.webhooks : alltrue([for event in hook.events : contains(["push", "pull_request", "issues", "issue_comment", "create", "delete", "member", "fork", "watch", "gollum", "public", "team_add", "repository", "repository_vulnerability_alert", "star", "package", "meta", "milestone", "project", "project_card", "project_column", "organization", "org_block", "label", "marketplace_purchase", "security_advisory", "check_run", "check_suite", "code_scanning_alert", "commit_comment", "content_reference", "deploy_key", "deployment", "deployment_status", "discussion", "discussion_comment", "github_app_authorization", "installation", "installation_repositories", "membership", "page_build", "project_v2", "project_v2_item", "pull_request_review", "pull_request_review_comment", "pull_request_review_thread", "registry_package", "repository_dispatch", "repository_import", "sponsorship", "status", "team", "workflow_dispatch", "workflow_job", "workflow_run"], event)])])
     error_message = "Webhook events must be valid GitHub webhook events."
   }
 }
@@ -419,3 +426,21 @@ variable "dependency_graph_enabled_for_new_repositories" {
   type        = bool
   default     = false
 } 
+
+variable "members_can_create_public_discussions" {
+  description = "Whether members can create public discussions"
+  type        = bool
+  default     = true
+}
+
+variable "members_can_create_private_discussions" {
+  description = "Whether members can create private discussions"
+  type        = bool
+  default     = true
+}
+
+variable "members_can_create_internal_discussions" {
+  description = "Whether members can create internal discussions"
+  type        = bool
+  default     = true
+}
