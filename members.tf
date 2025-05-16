@@ -69,4 +69,4 @@ resource "github_team_repository" "external_team_repos" {
   team_id    = github_team.external_teams[each.value.team_key].id
   repository = each.value.repository
   permission = each.value.permission
-} 
+}
