@@ -35,9 +35,7 @@ resource "github_repository" "security_settings" {
   vulnerability_alerts = each.value.vulnerability_alerts_enabled
 
   dynamic "security_and_analysis" {
-    for_each = each.value.advanced_security_enabled || 
-               each.value.secret_scanning_enabled || 
-               each.value.secret_scanning_push_protection_enabled ? [1] : []
+    for_each = each.value.advanced_security_enabled || each.value.secret_scanning_enabled || each.value.secret_scanning_push_protection_enabled ? [1] : []
     
     content {
       dynamic "advanced_security" {
