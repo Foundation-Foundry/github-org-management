@@ -36,7 +36,7 @@ resource "github_repository" "security_settings" {
 
   dynamic "security_and_analysis" {
     for_each = each.value.advanced_security_enabled || each.value.secret_scanning_enabled || each.value.secret_scanning_push_protection_enabled ? [1] : []
-    
+
     content {
       dynamic "advanced_security" {
         for_each = each.value.advanced_security_enabled ? [1] : []
@@ -44,14 +44,14 @@ resource "github_repository" "security_settings" {
           status = "enabled"
         }
       }
-      
+
       dynamic "secret_scanning" {
         for_each = each.value.secret_scanning_enabled ? [1] : []
         content {
           status = "enabled"
         }
       }
-      
+
       dynamic "secret_scanning_push_protection" {
         for_each = each.value.secret_scanning_push_protection_enabled ? [1] : []
         content {

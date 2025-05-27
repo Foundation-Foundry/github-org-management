@@ -36,7 +36,7 @@ resource "github_organization_webhook" "webhooks" {
 
   name         = "web"
   organization = var.organization_name
-  
+
   configuration {
     url          = each.value.url
     content_type = each.value.content_type
