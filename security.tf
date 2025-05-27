@@ -34,15 +34,32 @@ resource "github_repository" "security_settings" {
   name                 = each.value.repository
   vulnerability_alerts = each.value.vulnerability_alerts_enabled
 
-  security_and_analysis {
-    secret_scanning {
-      status = each.value.secret_scanning_enabled ? "enabled" : "disabled"
-    }
-    secret_scanning_push_protection {
-      status = each.value.secret_scanning_push_protection_enabled ? "enabled" : "disabled"
-    }
-    advanced_security {
-      status = each.value.advanced_security_enabled ? "enabled" : "disabled"
+  dynamic "security_and_analysis" {
+    for_each = each.value.advanced_security_enabled || 
+               each.value.secret_scanning_enabled || 
+               each.value.secret_scanning_push_protection_enabled ? [1] : []
+    
+    content {
+      dynamic "advanced_security" {
+        for_each = each.value.advanced_security_enabled ? [1] : []
+        content {
+          status = "enabled"
+        }
+      }
+      
+      dynamic "secret_scanning" {
+        for_each = each.value.secret_scanning_enabled ? [1] : []
+        content {
+          status = "enabled"
+        }
+      }
+      
+      dynamic "secret_scanning_push_protection" {
+        for_each = each.value.secret_scanning_push_protection_enabled ? [1] : []
+        content {
+          status = "enabled"
+        }
+      }
     }
   }
-} 
+}

@@ -41,9 +41,9 @@ resource "github_organization_webhook" "webhooks" {
     url          = each.value.url
     content_type = each.value.content_type
     secret       = each.value.secret
-    insecure_ssl = each.value.insecure_ssl
+    insecure_ssl = each.value.insecure_ssl != null ? each.value.insecure_ssl : false
   }
 
-  active = each.value.active
+  active = each.value.active != null ? each.value.active : true
   events = each.value.events
 }

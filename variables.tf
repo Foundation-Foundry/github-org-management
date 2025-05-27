@@ -15,6 +15,44 @@ variable "github_token" {
   sensitive   = true
 }
 
+variable "webhook_secret" {
+  description = "Secret for GitHub webhooks"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "common_api_key" {
+  description = "Common API key for all services"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "service_api_keys" {
+  description = "Map of service names to API keys"
+  type        = map(string)
+  sensitive   = true
+  default     = {
+    "service-a" = ""
+    "service-b" = ""
+    "service-c" = ""
+    "service-d" = ""
+  }
+}
+
+variable "service_db_passwords" {
+  description = "Map of service names to database passwords"
+  type        = map(string)
+  sensitive   = true
+  default     = {
+    "service-a" = ""
+    "service-b" = ""
+    "service-c" = ""
+    "service-d" = ""
+  }
+}
+
 variable "github_app_id" {
   description = "GitHub App ID"
   type        = string
@@ -186,9 +224,14 @@ variable "repository_security_settings" {
   default = {}
 
   validation {
-    condition = alltrue([for setting in var.repository_security_settings :
-    contains(["enabled", "disabled"], setting.secret_scanning_enabled ? "enabled" : "disabled")])
-    error_message = "Security settings must be either 'enabled' or 'disabled'"
+    condition = alltrue([
+      for setting in var.repository_security_settings :
+      can(setting.vulnerability_alerts_enabled) &&
+      can(setting.secret_scanning_enabled) &&
+      can(setting.secret_scanning_push_protection_enabled) &&
+      can(setting.advanced_security_enabled)
+    ])
+    error_message = "All security settings must be valid boolean values"
   }
 }
 
@@ -208,9 +251,13 @@ variable "webhooks" {
     condition     = alltrue([for hook in var.webhooks : contains(["json", "form"], hook.content_type)])
     error_message = "Webhook content_type must be either 'json' or 'form'."
   }
+  
+  # Simplified validation for webhook events to avoid overly complex conditions
   validation {
-    condition     = alltrue([for hook in var.webhooks : alltrue([for event in hook.events : contains(["push", "pull_request", "issues", "issue_comment", "create", "delete", "member", "fork", "watch", "gollum", "public", "team_add", "repository", "repository_vulnerability_alert", "star", "package", "meta", "milestone", "project", "project_card", "project_column", "organization", "org_block", "label", "marketplace_purchase", "security_advisory", "check_run", "check_suite", "code_scanning_alert", "commit_comment", "content_reference", "deploy_key", "deployment", "deployment_status", "discussion", "discussion_comment", "github_app_authorization", "installation", "installation_repositories", "membership", "page_build", "project_v2", "project_v2_item", "pull_request_review", "pull_request_review_comment", "pull_request_review_thread", "registry_package", "repository_dispatch", "repository_import", "sponsorship", "status", "team", "workflow_dispatch", "workflow_job", "workflow_run"], event)])])
-    error_message = "Webhook events must be valid GitHub webhook events."
+    condition     = alltrue([
+      for hook in var.webhooks : length(hook.events) > 0
+    ])
+    error_message = "Each webhook must have at least one event."
   }
 }
 

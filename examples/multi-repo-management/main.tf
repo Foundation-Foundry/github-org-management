@@ -122,23 +122,41 @@ module "github_org" {
 
   # Repository security settings
   repository_security_settings = {
-    "main-app" = {
-      vulnerability_alerts_enabled = true
-      security_policy_enabled     = true
-      secret_scanning_enabled     = true
+    "main-app-security" = {
+      repository                              = "main-app"
+      environment                             = "production"
+      wait_timer                              = 30
+      vulnerability_alerts_enabled            = true
+      secret_scanning_enabled                 = true
       secret_scanning_push_protection_enabled = true
-      dependabot_alerts_enabled   = true
-      dependabot_security_updates_enabled = true
-      code_scanning_enabled       = true
+      advanced_security_enabled               = true
+      reviewers = [
+        {
+          teams = ["backend-team"]
+          users = []
+        }
+      ]
+      deployment_branch_policy = {
+        protected_branches = true
+      }
     }
-    "frontend" = {
-      vulnerability_alerts_enabled = true
-      security_policy_enabled     = true
-      secret_scanning_enabled     = true
+    "frontend-security" = {
+      repository                              = "frontend"
+      environment                             = "production"
+      wait_timer                              = 30
+      vulnerability_alerts_enabled            = true
+      secret_scanning_enabled                 = true
       secret_scanning_push_protection_enabled = true
-      dependabot_alerts_enabled   = true
-      dependabot_security_updates_enabled = true
-      code_scanning_enabled       = true
+      advanced_security_enabled               = true
+      reviewers = [
+        {
+          teams = ["frontend-team"]
+          users = []
+        }
+      ]
+      deployment_branch_policy = {
+        protected_branches = true
+      }
     }
   }
 
@@ -200,16 +218,19 @@ module "github_org" {
       name        = "Administrators"
       description = "Organization administrators"
       privacy     = "secret"
+      parent_team_id = null
     }
     "frontend-team" = {
       name        = "Frontend Team"
       description = "Frontend developers"
       privacy     = "closed"
+      parent_team_id = null
     }
     "backend-team" = {
       name        = "Backend Team"
       description = "Backend developers"
       privacy     = "closed"
+      parent_team_id = null
     }
   }
 
@@ -235,4 +256,58 @@ module "github_org" {
       permission  = "push"
     }
   }
-} 
+  
+  # Organization webhooks for CI/CD
+  webhooks = {
+    "ci_webhook" = {
+      url          = "https://jenkins.example.com/github-webhook/"
+      content_type = "json"
+      secret       = var.webhook_secret
+      events       = ["push", "pull_request"]
+    }
+    "security_webhook" = {
+      url          = "https://security.example.com/github-webhook"
+      content_type = "json"
+      secret       = var.webhook_secret
+      events       = ["repository_vulnerability_alert"]
+    }
+  }
+  
+  # GitHub Actions secrets for all repositories
+  organization_secrets = {
+    "COMMON_API_KEY" = {
+      visibility      = "all"
+      plaintext_value = var.common_api_key
+    }
+  }
+  
+  # Repository-specific secrets
+  repository_secrets = {
+    "main_app_api_key" = {
+      repository      = "main-app"
+      name            = "API_KEY",
+      plaintext_value = var.main_app_api_key
+    }
+    "frontend_api_key" = {
+      repository      = "frontend"
+      name            = "API_KEY",
+      plaintext_value = var.frontend_api_key
+    }
+  }
+  
+  # Environment secrets
+  environment_secrets = {
+    "main_app_db_password" = {
+      repository      = "main-app"
+      environment     = "production"
+      name            = "DB_PASSWORD",
+      plaintext_value = var.main_app_db_password
+    }
+    "frontend_env_key" = {
+      repository      = "frontend"
+      environment     = "production"
+      name            = "ENV_KEY",
+      plaintext_value = var.frontend_env_key
+    }
+  }
+}

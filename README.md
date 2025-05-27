@@ -12,6 +12,8 @@ This Terraform module provides a comprehensive solution for managing GitHub orga
 - Support for both token and GitHub App authentication
 - Automated version management
 - Comprehensive security features
+- GitHub Actions secrets management
+- Organization webhooks configuration
 
 ## Security Features
 
@@ -41,6 +43,17 @@ The module includes several security features to help maintain a secure GitHub o
    - Deployment branch policies
    - Required reviewers
    - Wait timers
+
+5. **Secrets Management**:
+   - Organization-level secrets
+   - Repository-level secrets
+   - Environment-level secrets
+   - Controlled visibility settings
+
+6. **Webhooks**:
+   - Organization-level webhooks
+   - Secure webhook configuration
+   - Event-based triggers
 
 ## Authentication
 
@@ -151,6 +164,32 @@ module "github_org" {
       required_signatures = true
     }
   }
+  
+  # Organization webhooks
+  webhooks = {
+    "ci_webhook" = {
+      url          = "https://jenkins.example.com/github-webhook/"
+      content_type = "json"
+      secret       = "webhook-secret"
+      events       = ["push", "pull_request"]
+    }
+  }
+  
+  # GitHub Actions secrets
+  organization_secrets = {
+    "ORG_LEVEL_TOKEN" = {
+      visibility      = "all"
+      plaintext_value = var.org_token
+    }
+  }
+  
+  repository_secrets = {
+    "repo_api_key" = {
+      repository      = "repo1"
+      name            = "API_KEY"
+      plaintext_value = var.api_key
+    }
+  }
 }
 ```
 
@@ -191,6 +230,7 @@ module "github_org" {
       name        = "Developers"
       description = "Development team"
       privacy     = "closed"
+      parent_team_id = null
     }
   }
 
@@ -258,6 +298,41 @@ module "github_org" {
       required_signatures = true
     }
   }
+  
+  # Organization webhooks
+  webhooks = {
+    "ci_webhook" = {
+      url          = "https://jenkins.example.com/github-webhook/"
+      content_type = "json"
+      secret       = "webhook-secret"
+      events       = ["push", "pull_request"]
+    }
+  }
+  
+  # GitHub Actions secrets
+  organization_secrets = {
+    "ORG_LEVEL_TOKEN" = {
+      visibility      = "all"
+      plaintext_value = var.org_token
+    }
+  }
+  
+  repository_secrets = {
+    "repo_api_key" = {
+      repository      = "repo1"
+      name            = "API_KEY"
+      plaintext_value = var.api_key
+    }
+  }
+  
+  environment_secrets = {
+    "prod_db_password" = {
+      repository      = "repo1"
+      environment     = "production"
+      name            = "DB_PASSWORD"
+      plaintext_value = var.db_password
+    }
+  }
 }
 ```
 
@@ -288,11 +363,13 @@ teams = {
     name        = "Security Team"
     description = "Security and compliance team"
     privacy     = "secret"  # Most restrictive for sensitive teams
+    parent_team_id = null
   }
   "developers" = {
     name        = "Developers"
     description = "Development team"
     privacy     = "closed"  # Standard for internal teams
+    parent_team_id = null
   }
   "frontend-developers" = {
     name        = "Frontend Developers"
@@ -883,6 +960,20 @@ module "github_org" {
 | team_repositories | Team repository permissions | `map(object)` | `{}` | no |
 | repository_templates | Repository file templates | `map(object)` | `{}` | no |
 
+### Webhook Settings
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| webhooks | Map of webhooks to create | `map(object)` | `{}` | no |
+
+### GitHub Actions Secrets
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| organization_secrets | GitHub Actions organization secrets | `map(object)` | `{}` | no |
+| repository_secrets | GitHub Actions repository secrets | `map(object)` | `{}` | no |
+| environment_secrets | GitHub Actions environment secrets | `map(object)` | `{}` | no |
+
 ## Outputs
 
 | Name | Description |
@@ -890,7 +981,13 @@ module "github_org" {
 | organization_name | The name of the organization |
 | repositories | Map of created repositories |
 | teams | Map of created teams |
+| external_teams | Map of created external teams |
 | security_managers | List of security manager teams |
+| repository_security_settings | Map of repository security settings |
+| branch_protection_rules | Map of branch protection rules |
+| members | Map of organization members |
+| external_collaborators | Map of external collaborators |
+| webhooks | Map of organization webhooks |
 
 ## Usage
 
@@ -926,12 +1023,77 @@ module "github_org" {
     "example-repo" = {
       repository                              = "example-repo"
       environment                             = "production"
-      vulnerability_alerts_enabled           = true
-      secret_scanning_enabled                = true
+      wait_timer                              = 30
+      vulnerability_alerts_enabled            = true
+      secret_scanning_enabled                 = true
       secret_scanning_push_protection_enabled = true
-      dependabot_security_updates_enabled    = true
-      code_scanning_enabled                  = true
-      advanced_security_enabled              = true
+      advanced_security_enabled               = true
+      reviewers = [
+        {
+          teams = ["security-team"]
+          users = ["security-admin"]
+        }
+      ]
+      deployment_branch_policy = {
+        protected_branches = true
+      }
+    }
+  }
+}
+```
+
+### With Webhooks and Secrets
+
+```hcl
+module "github_org" {
+  source = "path/to/module"
+
+  organization_name = "example-org"
+  billing_email    = "billing@example.com"
+
+  # Organization webhooks
+  webhooks = {
+    "ci_webhook" = {
+      url          = "https://jenkins.example.com/github-webhook/"
+      content_type = "json"
+      secret       = "webhook-secret"
+      events       = ["push", "pull_request"]
+    }
+    "security_webhook" = {
+      url          = "https://security.example.com/github-webhook"
+      content_type = "json"
+      secret       = "security-webhook-secret"
+      events       = ["repository_vulnerability_alert"]
+    }
+  }
+  
+  # GitHub Actions secrets
+  organization_secrets = {
+    "ORG_LEVEL_TOKEN" = {
+      visibility      = "all"
+      plaintext_value = var.org_token
+    }
+    "RESTRICTED_TOKEN" = {
+      visibility             = "selected"
+      plaintext_value        = var.restricted_token
+      selected_repository_ids = ["repo1", "repo2"]
+    }
+  }
+  
+  repository_secrets = {
+    "repo_api_key" = {
+      repository      = "example-repo"
+      name            = "API_KEY"
+      plaintext_value = var.api_key
+    }
+  }
+  
+  environment_secrets = {
+    "prod_db_password" = {
+      repository      = "example-repo"
+      environment     = "production"
+      name            = "DB_PASSWORD"
+      plaintext_value = var.db_password
     }
   }
 }

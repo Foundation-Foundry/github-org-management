@@ -10,17 +10,6 @@ locals {
     vulnerability_alerts  = true
   }
 
-  # Common security settings
-  common_security_settings = {
-    vulnerability_alerts_enabled = true
-    security_policy_enabled     = true
-    secret_scanning_enabled     = true
-    secret_scanning_push_protection_enabled = true
-    dependabot_alerts_enabled   = true
-    dependabot_security_updates_enabled = true
-    code_scanning_enabled       = true
-  }
-
   # Common branch protection settings
   common_branch_protection = {
     enforce_admins = true
@@ -65,11 +54,54 @@ locals {
       name        = "Administrators"
       description = "Organization administrators"
       privacy     = "secret"
+      parent_team_id = null
     }
     "backend-team" = {
       name        = "Backend Team"
       description = "Backend developers"
       privacy     = "closed"
+      parent_team_id = null
+    }
+  }
+  
+  # Repository security settings
+  repository_security_settings = {
+    for repo_name, _ in local.repositories : "${repo_name}-security" => {
+      repository                              = repo_name
+      environment                             = "production"
+      wait_timer                              = 30
+      vulnerability_alerts_enabled            = true
+      secret_scanning_enabled                 = true
+      secret_scanning_push_protection_enabled = true
+      advanced_security_enabled               = true
+      reviewers = [
+        {
+          teams = ["backend-team"]
+          users = []
+        }
+      ]
+      deployment_branch_policy = {
+        protected_branches = true
+      }
+    }
+  }
+  
+  # Repository-specific secrets
+  repository_secrets = {
+    for repo_name, _ in local.repositories : "${repo_name}_api_key" => {
+      repository      = repo_name
+      name            = "API_KEY"
+      plaintext_value = var.service_api_keys[repo_name]
+    }
+  }
+  
+  # Environment secrets
+  environment_secrets = {
+    for repo_name, _ in local.repositories : "${repo_name}_db_password" => {
+      repository      = repo_name
+      environment     = "production"
+      name            = "DB_PASSWORD"
+      plaintext_value = var.service_db_passwords[repo_name]
     }
   }
 }
@@ -115,9 +147,7 @@ module "github_org" {
   }
 
   # Repository security settings
-  repository_security_settings = {
-    for repo_name, _ in local.repositories : repo_name => local.common_security_settings
-  }
+  repository_security_settings = local.repository_security_settings
 
   # Repository templates
   repository_templates = {
@@ -182,4 +212,34 @@ module "github_org" {
       }
     }
   )
-} 
+  
+  # Organization webhooks for CI/CD
+  webhooks = {
+    "ci_webhook" = {
+      url          = "https://jenkins.example.com/github-webhook/"
+      content_type = "json"
+      secret       = var.webhook_secret
+      events       = ["push", "pull_request"]
+    }
+    "security_webhook" = {
+      url          = "https://security.example.com/github-webhook"
+      content_type = "json"
+      secret       = var.webhook_secret
+      events       = ["repository_vulnerability_alert"]
+    }
+  }
+  
+  # GitHub Actions secrets for all repositories
+  organization_secrets = {
+    "COMMON_API_KEY" = {
+      visibility      = "all"
+      plaintext_value = var.common_api_key
+    }
+  }
+  
+  # Repository-specific secrets
+  repository_secrets = local.repository_secrets
+  
+  # Environment secrets
+  environment_secrets = local.environment_secrets
+}

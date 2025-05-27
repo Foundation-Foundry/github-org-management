@@ -47,4 +47,9 @@ output "members" {
 output "external_collaborators" {
   description = "Map of external collaborators"
   value       = github_repository_collaborator.external_collaborators
-} 
+}
+
+output "webhooks" {
+  description = "Map of organization webhooks"
+  value       = github_organization_webhook.webhooks
+}

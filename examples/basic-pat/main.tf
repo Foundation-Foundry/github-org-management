@@ -31,6 +31,7 @@ module "github_org" {
       name        = "Developers"
       description = "Development team"
       privacy     = "closed"
+      parent_team_id = null
     }
   }
 
@@ -62,4 +63,22 @@ module "github_org" {
       }
     }
   }
-} 
+  
+  # Organization webhooks
+  webhooks = {
+    "ci_webhook" = {
+      url          = "https://jenkins.example.com/github-webhook/"
+      content_type = "json"
+      secret       = var.webhook_secret
+      events       = ["push", "pull_request"]
+    }
+  }
+  
+  # GitHub Actions secrets
+  organization_secrets = {
+    "ORG_LEVEL_TOKEN" = {
+      visibility      = "all"
+      plaintext_value = var.org_token
+    }
+  }
+}

@@ -31,6 +31,7 @@ module "github_org" {
       name        = "Developers"
       description = "Development team"
       privacy     = "closed"
+      parent_team_id = null
     }
   }
 
@@ -53,10 +54,12 @@ module "github_org" {
     "contractors" = {
       name        = "Contractors"
       description = "External contractor team"
+      parent_team_id = null
     }
     "security-reviewers" = {
       name        = "Security Reviewers"
       description = "External security review team"
+      parent_team_id = null
     }
   }
 
@@ -122,4 +125,63 @@ module "github_org" {
       }
     }
   }
-} 
+  
+  # Repository security settings
+  repository_security_settings = {
+    "main-app-security" = {
+      repository                              = "main-app"
+      environment                             = "production"
+      wait_timer                              = 30
+      vulnerability_alerts_enabled            = true
+      secret_scanning_enabled                 = true
+      secret_scanning_push_protection_enabled = true
+      advanced_security_enabled               = true
+      reviewers = [
+        {
+          teams = ["developers"]
+          users = []
+        }
+      ]
+      deployment_branch_policy = {
+        protected_branches = true
+      }
+    }
+    "security-tools-security" = {
+      repository                              = "security-tools"
+      environment                             = "production"
+      wait_timer                              = 30
+      vulnerability_alerts_enabled            = true
+      secret_scanning_enabled                 = true
+      secret_scanning_push_protection_enabled = true
+      advanced_security_enabled               = true
+      reviewers = [
+        {
+          teams = ["developers"]
+          users = []
+        }
+      ]
+      deployment_branch_policy = {
+        protected_branches = true
+      }
+    }
+  }
+  
+  # Organization webhooks for security notifications
+  webhooks = {
+    "security_webhook" = {
+      url          = "https://security.example.com/github-webhook"
+      content_type = "json"
+      secret       = var.webhook_secret
+      events       = ["repository_vulnerability_alert"]
+    }
+  }
+  
+  # Repository-specific secrets for external collaborators
+  repository_secrets = {
+    "main_app_api_key" = {
+      repository      = "main-app"
+      name            = "EXTERNAL_API_KEY",
+      plaintext_value = var.external_api_key
+    }
+  }
+}
